@@ -1,0 +1,34 @@
+{
+  "name": "test-saml",
+  "version": "1.0.0",
+  "description": "POC for SAML testing\\",
+  "main": "app.js",
+  "scripts": {
+    "test": "npm start",
+    "start": "node app.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kasungayand/saml-poc.git"
+  },
+  "keywords": [
+    "saml"
+  ],
+  "author": "kasungayand@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kasungayand/saml-poc/issues"
+  },
+  "homepage": "https://github.com/kasungayand/saml-poc#readme",
+  "dependencies": {
+    "connect-flash": "^0.1.1",
+    "cookie-parser": "^1.4.6",
+    "express": "^4.18.1",
+    "express-session": "^1.17.3",
+    "file-system-cache": "^2.0.0",
+    "passport": "^0.6.0",
+    "passport-saml": "^3.2.1",
+    "passport-saml-metadata": "^2.6.0",
+    "saml2js": "^0.1.2"
+  }
+}
