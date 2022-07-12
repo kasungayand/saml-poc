@@ -8,7 +8,6 @@ const SAML = require('passport-saml').SAML;
 const env = "development";
 const config = require("./config/samlConfig")[env];
 var fs = require('fs');
-const Saml2js = require('saml2js');
 
 const port = 4030;
 const app = express();
@@ -41,26 +40,35 @@ app.get("/metadata", (req, res) => {
       res.status(200).send(saml.generateServiceProviderMetadata());
 });
 
-app.get('/login', 
-    passport.authenticate(config.passport.strategy, { successRedirect: '/', failureRedirect: '/login/failure' ,RelayState: config.passport.saml.callbackUrl})
-);
-
-app.get('/logout',(req,res)=>{
-    req.logOut();
+/** pass the strategy in the login request */
+app.get('/login', (req, res, next) => {
+  passport.authenticate(req.query.identifier, { successRedirect: '/', failureRedirect: '/login/failure'})(req, res, next); //RelayState: config.passport.saml.callbackUrl
 });
 
-app.post('/login/callback', 
-    passport.authenticate(config.passport.strategy, { failureRedirect: '/login/failure', failureFlash: true }), (req, res, next) => {
-        const xmlResponse = req.body.SAMLResponse;
-        const parser = new Saml2js(xmlResponse);
-        req.samlUserObject = parser.toObject();
-    next();
-    },(req, res) => {
+app.get('/logout', function(req, res, next) {
+  req.logout(function(err) {
+    if (err) { return next(err); }
+    res.redirect('/');
+  });
+});
+
+app.post("/login/callback",(req, res, next) => {
+        try {
+          passport.authenticate(req.query.identifier, { failureRedirect: '/login/failure', failureFlash: true }, (error, user, info) => {
+            req.samlUserObject = user;
+            next()
+          })(req, res, next);
+        } catch(e) {
+          console.log(e);
+        }
+    },
+    (req, res) => {
       return res.status(200).send({
         'status': "success",
         "user": req.samlUserObject
-    });
-  });
+      });
+    }
+);
 
 app.get("/login/failure", function(req, res){
     res.status(200).send({
@@ -68,10 +76,22 @@ app.get("/login/failure", function(req, res){
     });
 });
 
-app.get('/login/success',(req,res)=>{
+app.get('/',(req,res)=>{
   res.status(200).send({
     'status': JSON.stringify(req.session.flash)
+  });
 });
+
+app.get('/authentication/test',(req,res)=>{
+  if(req.isAuthenticated){
+    res.status(200).send({
+      'status': "authenticted",
+    })
+  }else{
+    res.status(401).send({
+      'status': "Unauthenticted",
+    });
+  }
 });
 
 const server = app.listen(port, function () {
