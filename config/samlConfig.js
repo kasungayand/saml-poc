@@ -1,6 +1,3 @@
-const os = require('os');
-const fileCache = require('file-system-cache').default;
-
 const host = "https://7e46-103-247-48-180.in.ngrok.io";
 
 module.exports = {

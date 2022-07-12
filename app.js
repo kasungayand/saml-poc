@@ -1,6 +1,5 @@
 const express = require("express");
 const cookieParser = require("cookie-parser");
-const bodyParser = require("body-parser");
 const passport = require('passport');
 const session = require('express-session');
 var flash = require('connect-flash');
@@ -8,6 +7,10 @@ const SAML = require('passport-saml').SAML;
 const env = "development";
 const config = require("./config/samlConfig")[env];
 var fs = require('fs');
+var fs = require('fs');
+const os = require('os');
+const fileCache = require('file-system-cache').default;
+const passportSamlMiddleware =  require('./middlewares/passportHandler')
 
 const port = 4030;
 const app = express();
@@ -24,9 +27,55 @@ app.use(session({
 }));
 
 app.use(flash());
-require('./middlewares/passportHandler')(passport);
-app.use(passport.initialize());
-app.use(passport.session());
+// require('./middlewares/passportHandler')(passport);
+/** no need to initialize if we not use sessions with authentication */
+// app.use(passport.initialize());
+// app.use(passport.session());
+
+app.get("/set_strategies", async (req, res) =>{
+  let strategies = [
+    {
+      platform: "jobready",
+      strategy: "staging125",
+      metadata: {
+        url: "https://staging125.dev.plus.jobready.io/saml_idp/metadata",
+       timeout: "1500",
+        backupStore: fileCache({
+          basePath: os.tmpdir(),
+          ns: config.passport.saml.issuer
+        })
+      }
+    },
+    {
+      platform: "microsoft",
+      strategy: "azure",
+      metadata: {
+        url: "https://login.microsoftonline.com/2ad92363-0194-43e2-9924-b4709e1020c3/federationmetadata/2007-06/federationmetadata.xml?appid=c5c8e065-fff0-48e5-95f0-15091b5b59e7",
+       timeout: "1500",
+        backupStore: fileCache({
+          basePath: os.tmpdir(),
+          ns: config.passport.saml.issuer
+        })
+      }
+    },
+    {
+      platform: "jobready",
+      strategy: "ecosystem2",
+      metadata:{
+        url: "https://ecosystem2.jobreadyplus.com/saml_idp/metadata",
+        timeout: "1500",
+        backupStore: fileCache({
+          basePath: os.tmpdir(),
+          ns: config.passport.saml.issuer
+        })
+      }
+    }
+  ];
+  await passportSamlMiddleware.setStrategies(passport,strategies);
+  res.status(200).send({
+    'status': "Strategies updated"
+  });
+})
 
 app.get("/metadata", (req, res) => {
     const saml = new SAML({
@@ -40,7 +89,6 @@ app.get("/metadata", (req, res) => {
       res.status(200).send(saml.generateServiceProviderMetadata());
 });
 
-/** pass the strategy in the login request */
 app.get('/login', (req, res, next) => {
   passport.authenticate(req.query.identifier, { successRedirect: '/', failureRedirect: '/login/failure'})(req, res, next); //RelayState: config.passport.saml.callbackUrl
 });
