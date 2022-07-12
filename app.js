@@ -89,6 +89,8 @@ app.get("/metadata", (req, res) => {
       res.status(200).send(saml.generateServiceProviderMetadata());
 });
 
+/** https://7e46-103-247-48-180.in.ngrok.io/login?identifier=azure */
+/** https://7e46-103-247-48-180.in.ngrok.io/login?identifier=staging125 */
 app.get('/login', (req, res, next) => {
   passport.authenticate(req.query.identifier, { successRedirect: '/', failureRedirect: '/login/failure'})(req, res, next); //RelayState: config.passport.saml.callbackUrl
 });
